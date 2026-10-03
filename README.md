@@ -1,36 +1,27 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Việc học của tôi
 
-## Getting Started
+Giao diện học tập responsive được xây dựng bằng Next.js App Router, TypeScript và Tailwind CSS.
 
-First, run the development server:
+## Chạy ứng dụng
 
 ```bash
+npm install
+# Hoặc cài chính xác theo package-lock.json:
+npm ci
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Mở [http://localhost:3000](http://localhost:3000) để xem trang công việc.
+Trang chủ tự chuyển đến `/tasks`; giao diện đăng nhập mẫu nằm tại
+[http://localhost:3000/login](http://localhost:3000/login).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Các trang
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- `/login`: form giao diện mẫu; không lưu hoặc gửi thông tin đăng nhập.
+- `/tasks`: bảng công việc với tìm kiếm, lọc, thêm, sửa, xóa có xác nhận và đánh dấu hoàn thành. Tên công việc sau khi bỏ khoảng trắng đầu/cuối phải dài từ 1 đến 120 ký tự. Dữ liệu chỉ nằm trong state trên trình duyệt và mất khi tải lại trang.
 
-## Learn More
+Giao diện sử dụng các component trong `src/app/components`. Hiện dự án chưa có tài nguyên trong `public/images`; biểu tượng được vẽ bằng SVG nội tuyến.
 
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Lưu ý
+- Chưa có database
+- Chưa có đăng nhập thật, dữ liệu mẫu tạm thời 

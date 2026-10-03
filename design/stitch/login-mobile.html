@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html class="h-full" lang="vi">
+
+<head>
+  <meta charset="utf-8">
+  <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
+    name="viewport">
+  <meta content="mobile_blank" name="shell-type">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200"
+    rel="stylesheet">
+  <link href="https://fonts.googleapis.com" rel="preconnect">
+  <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@500;600;700&amp;family=Inter:wght@400;500;600&amp;display=swap"
+    rel="stylesheet">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+    rel="stylesheet">
+  <style>
+    @layer base {
+
+      html,
+      body {
+        width: 100%;
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        overscroll-behavior-y: none;
+      }
+
+      .pb-safe {
+        padding-bottom: env(safe-area-inset-bottom, 0px);
+      }
+
+      .pt-safe {
+        padding-top: env(safe-area-inset-top, 0px);
+      }
+
+      main>:first-child {
+        margin-top: 0 !important;
+      }
+
+      main>:last-child {
+        margin-bottom: 0 !important;
+      }
+    }
+
+    ::-webkit-scrollbar {
+      display: none;
+    }
+  </style>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script
+    id="tailwind-config">tailwind.config = { darkMode: "class", theme: { extend: { colors: { "tertiary-fixed-dim": "#73db9a", "secondary": "#006a61", "surface-container-lowest": "#ffffff", "tertiary-container": "#008049", "primary-soft": "#DCFCE7", "success": "#22C55E", "error": "#DC2626", "on-surface": "#0a1f17", "on-tertiary-fixed": "#00210f", "primary-hover": "#166534", "tertiary": "#006438", "text": "#0F2A1D", "on-tertiary": "#ffffff", "inverse-surface": "#1f352b", "tertiary-fixed": "#8ff8b4", "surface-variant": "#cfe8da", "outline-variant": "#becabc", "on-error-container": "#93000a", "background": "#e7fff1", "on-primary-fixed": "#00210a", "surface-container-highest": "#cfe8da", "secondary-container": "#86f2e4", "primary": "#00652c", "error-container": "#ffdad6", "inverse-on-surface": "#ddf7e8", "primary-container": "#15803d", "surface": "#F0FDF4", "on-primary-container": "#d3ffd5", "on-tertiary-fixed-variant": "#00522d", "outline": "#6f7a6e", "on-secondary-container": "#006f66", "secondary-fixed-dim": "#6bd8cb", "on-error": "#ffffff", "secondary-fixed": "#89f5e7", "inverse-primary": "#79db8d", "on-surface-variant": "#3f493f", "on-tertiary-container": "#d0ffdb", "on-background": "#0a1f17", "primary-fixed-dim": "#79db8d", "border": "#D1E7D8", "on-secondary-fixed": "#00201d", "surface-container-low": "#e0faeb", "surface-container-high": "#d5eedf", "primary-fixed": "#95f8a7", "on-secondary": "#ffffff", "on-primary-fixed-variant": "#005323", "warning": "#F59E0B", "surface-tint": "#006d30", "surface-dim": "#c7e0d1", "surface-bright": "#e7fff1", "surface-container": "#daf4e5", "on-primary": "#ffffff", "on-secondary-fixed-variant": "#005049" }, borderRadius: { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px" }, spacing: { "space-lg": "1.5rem", "space-3xl": "4rem", "margin": "2rem", "space-4xl": "6rem", "space-md": "1rem", "space-xs": "0.25rem", "margin-mobile": "1rem", "gutter-mobile": "1rem", "space-xl": "2rem", "space-2xl": "3rem", "gutter": "1.5rem", "margin-tablet": "1.5rem", "space-sm": "0.5rem" }, fontFamily: { "body-sm": ["Inter"], "headline-xl-mobile": ["Be Vietnam Pro"], "headline-md": ["Be Vietnam Pro"], "headline-lg": ["Be Vietnam Pro"], "label-sm": ["Inter"], "label-md": ["Inter"], "body-lg": ["Inter"], "headline-xl": ["Be Vietnam Pro"], "headline-md-mobile": ["Be Vietnam Pro"], "headline-lg-mobile": ["Be Vietnam Pro"], "body-md": ["Inter"], "headline-sm-mobile": ["Be Vietnam Pro"], "headline-sm": ["Be Vietnam Pro"] }, fontSize: { "body-sm": ["14px", { "lineHeight": "1.5", "fontWeight": "400" }], "headline-xl-mobile": ["36px", { "lineHeight": "1.15", "letterSpacing": "-0.015em", "fontWeight": "700" }], "headline-md": ["28px", { "lineHeight": "1.3", "fontWeight": "600" }], "headline-lg": ["40px", { "lineHeight": "1.2", "letterSpacing": "-0.015em", "fontWeight": "700" }], "label-sm": ["12px", { "lineHeight": "1.4", "fontWeight": "500" }], "label-md": ["14px", { "lineHeight": "1.4", "fontWeight": "600" }], "body-lg": ["18px", { "lineHeight": "1.6", "fontWeight": "400" }], "headline-xl": ["56px", { "lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "700" }], "headline-md-mobile": ["22px", { "lineHeight": "1.35", "fontWeight": "600" }], "headline-lg-mobile": ["28px", { "lineHeight": "1.25", "letterSpacing": "-0.01em", "fontWeight": "700" }], "body-md": ["16px", { "lineHeight": "1.6", "fontWeight": "400" }], "headline-sm-mobile": ["18px", { "lineHeight": "1.4", "fontWeight": "600" }], "headline-sm": ["20px", { "lineHeight": "1.4", "fontWeight": "600" }] } } } };</script>
+</head>
+
+<body
+  class="min-h-full bg-surface text-text flex flex-col antialiased selection:bg-primary-soft selection:text-primary">
+  <main class="flex-1 flex flex-col relative w-full pt-safe pb-safe px-gutter-mobile bg-surface">
+    <div class="flex flex-col w-full max-w-[420px] mx-auto pb-space-xl">
+      <!-- Top Visual Badge & Brand Header -->
+      <header class="flex flex-col items-center text-center px-margin-mobile pt-space-md mb-space-lg"
+        style="padding-top: 3.5rem;">
+        <!-- Brand Logo Container -->
+        <div class="relative mb-space-sm">
+          <div class="w-16 h-16 rounded-xl bg-surface-container flex items-center justify-center p-2 shadow-sm">
+            <img alt="Logo Việc Học" class="w-full h-full object-contain rounded-lg"
+              src="https://lh3.googleusercontent.com/aida/AEtjO1VMv0I158_MNU4FlZ3GAODAjxG6gHVSs3YsWWPZXYEfiSEd3-CYlYgsv0hRCngM3i-2F7sOQsAj_qW4Gk8YxmT1AOaejSc4nPeKQxQxx54-wjsBI8-9xUrZDE_VxBslZI1XPPj3z9i1_ms6xxggPLMetK4wZ35l6rmhVpzSdkPsOuL24lDVq5jzf7SkHldmvq7TY9YNa9BXlQwtS3_fsRxfQ-L2lQQ0vC2zgIS78ur74Lo0gf2wdsYsYws">
+          </div>
+          <span class="absolute -bottom-1 -right-1 flex h-4 w-4">
+            <span
+              class="animate-ping absolute inline-flex h-full w-full rounded-full bg-tertiary-fixed-dim opacity-75"></span>
+            <span class="relative inline-flex rounded-full h-4 w-4 bg-primary-container"></span>
+          </span>
+        </div>
+        <!-- Calm Aesthetic Pill Badge -->
+
+        <!-- Screen Title & Welcoming Subtext -->
+        <h2 class="font-headline-lg-mobile text-headline-lg-mobile text-text tracking-tight mb-1">
+          Chào mừng bạn trở lại
+        </h2>
+        <p class="font-body-sm text-body-sm text-on-surface-variant max-w-[280px]">
+          Đăng nhập để tiếp tục kế hoạch học tập cùng Việc Học Của Tôi
+        </p>
+      </header>
+      <!-- Login Form Section -->
+      <div class="bg-surface-container-lowest rounded-xl shadow-sm p-5 mx-margin-mobile mb-space-md">
+        <form class="flex flex-col gap-space-md" id="loginForm" onsubmit="event.preventDefault();">
+          <!-- Email Field -->
+          <div class="flex flex-col gap-1.5">
+            <label class="font-label-md text-label-md text-text flex items-center gap-1.5" for="email">
+              <span class="material-symbols-outlined text-[18px] text-primary">mail</span>
+              <span class="">Email sinh viên / tài khoản</span>
+            </label>
+            <div class="relative flex items-center">
+              <input
+                class="w-full h-11 pl-3.5 pr-10 rounded-lg bg-surface-container-lowest text-text font-body-md text-body-md placeholder:text-outline focus:outline-none focus:bg-surface-container-lowest transition-all"
+                id="email" onblur="this.style.boxShadow='inset 0 0 0 1px #D1E7D8';"
+                onfocus="this.style.boxShadow='inset 0 0 0 2px #15803D, 0 0 0 3px rgba(21, 128, 61, 0.15)';"
+                placeholder="vidu@sinhvien.edu.vn" required="" style="box-shadow: inset 0 0 0 1px #D1E7D8;"
+                type="email">
+              <span class="material-symbols-outlined absolute right-3 text-outline text-[20px] pointer-events-none">
+                alternate_email
+              </span>
+            </div>
+          </div>
+          <!-- Password Field -->
+          <div class="flex flex-col gap-1.5">
+            <div class="flex items-center justify-between">
+              <label class="font-label-md text-label-md text-text flex items-center gap-1.5" for="password">
+                <span class="material-symbols-outlined text-[18px] text-primary">lock</span>
+                <span class="">Mật khẩu</span>
+              </label>
+              <button
+                class="font-label-sm text-label-sm text-primary hover:text-primary-hover active:scale-95 transition-all"
+                type="button">
+                Quên mật khẩu?
+              </button>
+            </div>
+            <div class="relative flex items-center">
+              <input
+                class="w-full h-11 pl-3.5 pr-11 rounded-lg bg-surface-container-lowest text-text font-body-md text-body-md placeholder:text-outline focus:outline-none transition-all"
+                id="password" onblur="this.style.boxShadow='inset 0 0 0 1px #D1E7D8';"
+                onfocus="this.style.boxShadow='inset 0 0 0 2px #15803D, 0 0 0 3px rgba(21, 128, 61, 0.15)';"
+                placeholder="••••••••••••" required="" style="box-shadow: inset 0 0 0 1px #D1E7D8;" type="password">
+              <button aria-label="Ẩn hoặc hiện mật khẩu"
+                class="absolute right-1 w-9 h-9 flex items-center justify-center text-outline hover:text-text rounded-full transition-colors active:scale-95"
+                id="togglePassword" onclick="
+              const pwd = document.getElementById('password');
+              const icon = this.querySelector('.material-symbols-outlined');
+              if (pwd.type === 'password') {
+                pwd.type = 'text';
+                icon.textContent = 'visibility_off';
+              } else {
+                pwd.type = 'password';
+                icon.textContent = 'visibility';
+              }
+            " type="button">
+                <span class="material-symbols-outlined text-[20px]">visibility</span>
+              </button>
+            </div>
+          </div>
+          <!-- Remember Me & Touch Friendly Toggle -->
+          <div class="flex items-center pt-0.5">
+            <label class="flex items-center gap-2.5 cursor-pointer select-none group min-h-[44px]">
+              <input checked="" class="sr-only peer" id="rememberMe" type="checkbox">
+              <div
+                class="w-5 h-5 rounded bg-surface-container-lowest peer-checked:bg-primary flex items-center justify-center transition-all shadow-xs"
+                id="checkboxBox" style="box-shadow: inset 0 0 0 1.5px #6f7a6e;">
+                <span
+                  class="material-symbols-outlined text-on-primary text-[16px] scale-0 peer-checked:scale-100 transition-transform">
+                  check
+                </span>
+              </div>
+              <span class="font-body-sm text-body-sm text-on-surface-variant group-hover:text-text transition-colors">
+                Ghi nhớ trạng thái đăng nhập
+              </span>
+            </label>
+          </div>
+          <!-- Main CTA Button -->
+          <button
+            class="w-full h-12 bg-primary-container hover:bg-primary-hover active:scale-[0.98] text-on-primary font-headline-sm-mobile text-headline-sm-mobile rounded-xl flex items-center justify-center gap-2 shadow-md transition-all duration-150 mt-1 cursor-pointer"
+            type="submit">
+            <span class="">Đăng nhập</span>
+            <span class="material-symbols-outlined text-[20px]">arrow_forward</span>
+          </button>
+        </form>
+        <!-- Subtle Divider -->
+        <div class="relative flex items-center justify-center my-space-md">
+          <div class="w-full h-[1px] bg-border"></div>
+          <span class="absolute px-3 bg-surface-container-lowest font-label-sm text-label-sm text-outline">
+            hoặc tiếp tục với
+          </span>
+        </div>
+        <!-- Alternative Login Grid -->
+        <div class="grid grid-cols-2 gap-2.5">
+          <!-- Google Auth Button -->
+          <button
+            class="h-11 px-3 rounded-xl bg-surface hover:bg-primary-soft/40 active:scale-95 flex items-center justify-center gap-2 transition-all"
+            style="box-shadow: inset 0 0 0 1px #D1E7D8;" type="button">
+            <svg class="w-4 h-4 flex-shrink-0" viewBox="0 0 24 24">
+              <path
+                d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+                fill="#4285F4"></path>
+              <path
+                d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                fill="#34A853"></path>
+              <path
+                d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"
+                fill="#FBBC05"></path>
+              <path
+                d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
+                fill="#EA4335"></path>
+            </svg>
+            <span class="font-label-md text-label-md text-text">Google</span>
+          </button>
+          <!-- Edu Portal Button -->
+          <button
+            class="h-11 px-3 rounded-xl bg-surface hover:bg-primary-soft/40 active:scale-95 flex items-center justify-center gap-2 transition-all"
+            style="box-shadow: inset 0 0 0 1px #D1E7D8;" type="button">
+            <span class="material-symbols-outlined text-[18px] text-primary" style="font-variation-settings: 'FILL' 1;">
+              school
+            </span>
+            <span class="font-label-md text-label-md text-text">Edu Portal</span>
+          </button>
+        </div>
+        <!-- Sign-up Redirect Link -->
+        <div class="mt-space-md text-center pt-1">
+          <p class="font-body-sm text-body-sm text-on-surface-variant">
+            Chưa có tài khoản?
+            <a class="font-label-md text-label-md text-primary hover:text-primary-hover font-semibold inline-flex items-center gap-0.5 ml-0.5 group"
+              href="#register">
+              <span class="">Đăng ký ngay</span>
+              <span
+                class="material-symbols-outlined text-sm transition-transform group-hover:translate-x-0.5">chevron_right</span>
+            </a>
+          </p>
+        </div>
+      </div>
+      <!-- Inspirational Card (Calm Academic Tone) -->
+
+      <!-- Minimalist Security Footer -->
+      <footer class="mt-auto px-margin-mobile text-center flex flex-col items-center gap-2">
+
+        <div class="flex items-center justify-center gap-3 font-label-sm text-label-sm text-on-surface-variant">
+          <a class="hover:text-primary transition-colors" href="#privacy">Bảo mật thông tin sinh viên</a>
+          <span class="">•</span>
+          <a class="hover:text-primary transition-colors" href="#terms">Điều khoản dịch vụ</a>
+        </div>
+      </footer>
+    </div>
+  </main>
+
+
+
+</body>
+
+</html>
