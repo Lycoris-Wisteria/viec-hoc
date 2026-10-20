@@ -1,65 +1,84 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { z } from "zod";
 import { Icon } from "./Icon";
 import { TaskForm } from "./TaskForm";
 import { TaskList } from "./TaskList";
 import type { Task, TaskFilter } from "./task";
+import { getSupabaseBrowserClient } from "@/lib/supabase-browser";
 
-const initialTasks: Task[] = [
-  {
-    id: "calculus",
-    title: "Giải đề thi thử giải tích chương 3 và 4",
-    subject: "Toán cao cấp",
-    deadline: "Hôm nay, 11:30",
-    is_done: false,
-  },
-  {
-    id: "architecture",
-    title: "Hoàn thiện sơ đồ kiến trúc hệ thống và luồng dữ liệu",
-    subject: "Đồ án tốt nghiệp",
-    deadline: "Hôm nay, 16:00",
-    urgent: true,
-    is_done: false,
-  },
-  {
-    id: "ielts-reading",
-    title: "Luyện 2 đề Reading Cambridge IELTS 18",
-    subject: "Tiếng Anh IELTS",
-    deadline: "Hôm nay, 20:00",
-    is_done: false,
-  },
-  {
-    id: "macroeconomics",
-    title: "Nộp tóm tắt chính sách tài khóa mở rộng trên LMS",
-    subject: "Kinh tế vĩ mô",
-    deadline: "Hôm nay, 10:30",
-    is_done: true,
-  },
-  {
-    id: "web-video",
-    title: "Xem lại video bài giảng Mã trạng thái chuẩn",
-    subject: "Toán cao cấp",
-    deadline: "Hôm nay, 08:45",
-    is_done: true,
-  },
-  {
-    id: "ielts-vocabulary",
-    title: "Ôn 30 từ vựng chủ đề Môi trường & Đô thị hóa",
-    subject: "Tiếng Anh IELTS",
-    deadline: "Hôm nay, 09:15",
-    is_done: true,
-  },
-  {
-    id: "project-report",
-    title: "Họp trực tuyến với Giảng viên hướng dẫn tiến độ tuần 4",
-    subject: "Đồ án tốt nghiệp",
-    deadline: "Hôm nay, 10:00",
-    is_done: true,
-  },
-];
+class ApiRequestError extends Error {
+  constructor(
+    message: string,
+    readonly status?: number,
+  ) {
+    super(message);
+    this.name = "ApiRequestError";
+  }
+}
+
+async function apiFetch(
+  path: string,
+  options: RequestInit,
+  onUnauthorized: () => void,
+): Promise<unknown> {
+  try {
+    const { data, error } = await getSupabaseBrowserClient().auth.getSession();
+    if (error) throw new ApiRequestError("Không thể kiểm tra phiên đăng nhập.");
+    if (!data.session) {
+      onUnauthorized();
+      throw new ApiRequestError("Phiên đăng nhập đã hết hạn.", 401);
+    }
+
+    const headers = new Headers(options.headers);
+    headers.set("Authorization", `Bearer ${data.session.access_token}`);
+    if (options.body !== undefined) headers.set("Content-Type", "application/json");
+
+    const response = await fetch(path, { ...options, headers });
+    let body: unknown;
+    try {
+      body = await response.json();
+    } catch {
+      throw new ApiRequestError("Máy chủ trả về phản hồi không hợp lệ.", response.status);
+    }
+
+    if (response.status === 401) {
+      onUnauthorized();
+      throw new ApiRequestError("Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.", 401);
+    }
+    if (!response.ok) {
+      const errorMessage =
+        typeof body === "object" &&
+        body !== null &&
+        "error" in body &&
+        typeof body.error === "string"
+          ? body.error
+          : "Không thể hoàn tất yêu cầu.";
+      throw new ApiRequestError(errorMessage, response.status);
+    }
+
+    return body;
+  } catch (error) {
+    if (error instanceof ApiRequestError) throw error;
+    throw new ApiRequestError("Không thể kết nối đến máy chủ. Vui lòng thử lại.");
+  }
+}
+
+const taskListResponse = z.object({
+  data: z.array(
+    z.object({
+      id: z.string(),
+      title: z.string(),
+      is_done: z.boolean(),
+      created_at: z.string(),
+      due_at: z.string().nullable(),
+    }),
+  ),
+});
 
 function ProgressCard({ tasks }: { tasks: Task[] }) {
   const completed = tasks.filter((task) => task.is_done).length;
@@ -110,37 +129,275 @@ function ProgressCard({ tasks }: { tasks: Task[] }) {
 }
 
 function PomodoroCard() {
-  const [isFocusing, setIsFocusing] = useState(false);
+  const [remainingSeconds, setRemainingSeconds] = useState(25 * 60);
+  const [endTime, setEndTime] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (endTime === null) return;
+    const activeEndTime = endTime;
+
+    function updateRemainingTime() {
+      const remaining = Math.max(0, Math.ceil((activeEndTime - Date.now()) / 1000));
+      setRemainingSeconds(remaining);
+      if (remaining === 0) setEndTime(null);
+    }
+
+    updateRemainingTime();
+    const intervalId = window.setInterval(updateRemainingTime, 250);
+    return () => window.clearInterval(intervalId);
+  }, [endTime]);
+
+  function toggleTimer() {
+    if (endTime !== null) {
+      setRemainingSeconds(Math.max(0, Math.ceil((endTime - Date.now()) / 1000)));
+      setEndTime(null);
+      return;
+    }
+
+    const duration = remainingSeconds > 0 ? remainingSeconds : 25 * 60;
+    setRemainingSeconds(duration);
+    setEndTime(Date.now() + duration * 1000);
+  }
+
+  function resetTimer() {
+    setEndTime(null);
+    setRemainingSeconds(25 * 60);
+  }
+
+  const isFocusing = endTime !== null;
+  const minutes = Math.floor(remainingSeconds / 60);
+  const seconds = remainingSeconds % 60;
+  const buttonLabel = isFocusing
+    ? "Tạm dừng"
+    : remainingSeconds === 0
+      ? "Bắt đầu lại"
+      : remainingSeconds < 25 * 60
+        ? "Tiếp tục"
+        : "Bắt đầu";
 
   return (
-    <section className="flex items-center justify-between gap-4 rounded-2xl border border-border bg-white p-4 shadow-sm">
+    <section
+      aria-label="Đồng hồ Pomodoro"
+      className="flex items-center justify-between gap-4 rounded-2xl border border-border bg-white p-4 shadow-sm"
+      role="region"
+    >
       <div>
         <div className="flex items-center gap-2 text-xs font-medium text-muted">
           <Icon name="timer" className="h-4 w-4 text-primary" />
           Pomodoro
-          <span className="h-1.5 w-1.5 rounded-full bg-[#22c55e]" />
         </div>
-        <p className="font-display mt-1 text-2xl font-bold text-primary">25:00</p>
+        <p
+          aria-label="Thời gian Pomodoro"
+          aria-live="off"
+          className="font-display mt-1 text-2xl font-bold tabular-nums text-primary"
+          role="timer"
+        >
+          {String(minutes).padStart(2, "0")}:{String(seconds).padStart(2, "0")}
+        </p>
       </div>
-      <button
-        aria-pressed={isFocusing}
-        className="rounded-xl bg-[#dcfce7] px-4 py-2.5 text-sm font-semibold text-primary transition hover:bg-[#c8f5d5]"
-        onClick={() => setIsFocusing((current) => !current)}
-        type="button"
-      >
-        {isFocusing ? "Ⅱ Tạm dừng" : "▶ Bắt đầu"}
-      </button>
+      <div className="flex shrink-0 items-center gap-2">
+        <button
+          aria-label="Đặt lại Pomodoro"
+          className="flex h-10 w-10 items-center justify-center rounded-xl text-muted transition hover:bg-[#f0fdf4] hover:text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+          onClick={resetTimer}
+          title="Đặt lại Pomodoro"
+          type="button"
+        >
+          <svg
+            aria-hidden="true"
+            className="h-4 w-4"
+            fill="none"
+            stroke="currentColor"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth="2"
+            viewBox="0 0 24 24"
+          >
+            <path d="M3 12a9 9 0 1 0 2.64-6.36L3 8" />
+            <path d="M3 3v5h5" />
+          </svg>
+        </button>
+        <button
+          aria-label={buttonLabel}
+          aria-pressed={isFocusing}
+          className="flex min-h-11 items-center justify-center gap-2 rounded-xl bg-[#dcfce7] px-4 py-2.5 text-sm font-bold text-primary transition hover:bg-[#c8f5d5] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+          onClick={toggleTimer}
+          type="button"
+        >
+          <svg
+            aria-hidden="true"
+            className="h-4 w-4 shrink-0"
+            fill="currentColor"
+            viewBox="0 0 24 24"
+          >
+            {isFocusing ? (
+              <>
+                <rect height="14" rx="1.5" width="4" x="6" y="5" />
+                <rect height="14" rx="1.5" width="4" x="14" y="5" />
+              </>
+            ) : (
+              <path d="M7.5 4.8a1 1 0 0 1 1.02.03l11 6.2a1.1 1.1 0 0 1 0 1.94l-11 6.2A1 1 0 0 1 7 18.3V5.7a1 1 0 0 1 .5-.9Z" />
+            )}
+          </svg>
+          {buttonLabel}
+        </button>
+      </div>
     </section>
   );
 }
 
 export function TaskDashboard() {
-  const [tasks, setTasks] = useState(initialTasks);
+  const router = useRouter();
+  const [tasks, setTasks] = useState<Task[]>([]);
   const [filter, setFilter] = useState<TaskFilter>("all");
   const [query, setQuery] = useState("");
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [isSortOpen, setIsSortOpen] = useState(false);
   const [sortBy, setSortBy] = useState<"time" | "name">("time");
+  const [isLoadingTasks, setIsLoadingTasks] = useState(true);
+  const [taskError, setTaskError] = useState("");
+  const [isAddingTask, setIsAddingTask] = useState(false);
+  const [pendingTaskIds, setPendingTaskIds] = useState<Set<string>>(new Set());
+  const isAddingTaskRef = useRef(false);
+  const pendingTaskIdsRef = useRef(new Set<string>());
+  const refreshGenerationRef = useRef(0);
+  const [authStatus, setAuthStatus] = useState<
+    "loading" | "authenticated" | "unauthenticated" | "error"
+  >("loading");
+  const [authError, setAuthError] = useState("");
+  const [isSigningOut, setIsSigningOut] = useState(false);
+
+  const clearDashboardState = useCallback(() => {
+    refreshGenerationRef.current += 1;
+    setTasks([]);
+    setFilter("all");
+    setQuery("");
+    setIsAddOpen(false);
+    setIsSortOpen(false);
+    setSortBy("time");
+    setTaskError("");
+  }, []);
+
+  useEffect(() => {
+    let isMounted = true;
+    let receivedAuthEvent = false;
+    let unsubscribe: (() => void) | undefined;
+
+    void Promise.resolve()
+      .then(() => {
+        if (!isMounted) return null;
+
+        const supabase = getSupabaseBrowserClient();
+        const {
+          data: { subscription },
+        } = supabase.auth.onAuthStateChange((_event, session) => {
+          receivedAuthEvent = true;
+          if (!isMounted) return;
+
+          setAuthError("");
+          if (session) {
+            setAuthStatus("authenticated");
+          } else {
+            clearDashboardState();
+            setAuthStatus("unauthenticated");
+          }
+        });
+
+        unsubscribe = () => subscription.unsubscribe();
+        return supabase.auth.getSession();
+      })
+      .then((result) => {
+        if (!result || !isMounted || receivedAuthEvent) return;
+        const { data, error } = result;
+        if (error) {
+          setAuthError("Không thể kiểm tra phiên đăng nhập. Vui lòng tải lại trang.");
+          setAuthStatus("error");
+          return;
+        }
+
+        if (data.session) {
+          setAuthStatus("authenticated");
+        } else {
+          clearDashboardState();
+          setAuthStatus("unauthenticated");
+        }
+      })
+      .catch((error: unknown) => {
+        if (!isMounted || receivedAuthEvent) return;
+        setAuthError(
+          error instanceof Error && error.message.startsWith("Thiếu cấu hình Supabase.")
+            ? error.message
+            : "Không thể kết nối để kiểm tra phiên đăng nhập. Vui lòng thử lại.",
+        );
+        setAuthStatus("error");
+      });
+
+    return () => {
+      isMounted = false;
+      unsubscribe?.();
+    };
+  }, [clearDashboardState]);
+
+  useEffect(() => {
+    if (authStatus === "unauthenticated") router.replace("/login");
+  }, [authStatus, router]);
+
+  const refreshTasks = useCallback(async () => {
+    const generation = ++refreshGenerationRef.current;
+    setIsLoadingTasks(true);
+    setTaskError("");
+    try {
+      const result = taskListResponse.safeParse(
+        await apiFetch("/api/tasks", { method: "GET" }, () => router.replace("/login")),
+      );
+      if (!result.success) {
+        throw new ApiRequestError("Dữ liệu công việc từ máy chủ không hợp lệ.");
+      }
+      if (generation !== refreshGenerationRef.current) return;
+      setTasks(result.data.data.map(({ id, title, is_done, due_at }) => ({ id, title, is_done, due_at })));
+    } catch (error) {
+      if (generation !== refreshGenerationRef.current) return;
+      setTaskError(
+        error instanceof ApiRequestError
+          ? error.message
+          : "Không thể tải danh sách công việc. Vui lòng thử lại.",
+      );
+    } finally {
+      if (generation === refreshGenerationRef.current) setIsLoadingTasks(false);
+    }
+  }, [router]);
+
+  useEffect(() => {
+    if (authStatus !== "authenticated") return;
+    let isMounted = true;
+    void Promise.resolve().then(() => {
+      if (isMounted) return refreshTasks();
+    });
+    return () => {
+      isMounted = false;
+    };
+  }, [authStatus, refreshTasks]);
+
+  async function handleSignOut() {
+    setIsSigningOut(true);
+    setAuthError("");
+
+    try {
+      const { error } = await getSupabaseBrowserClient().auth.signOut();
+      if (error) {
+        setAuthError("Không thể đăng xuất. Vui lòng thử lại.");
+        setIsSigningOut(false);
+        return;
+      }
+
+      clearDashboardState();
+      setAuthStatus("unauthenticated");
+      router.replace("/login");
+    } catch {
+      setAuthError("Không thể kết nối để đăng xuất. Vui lòng thử lại.");
+      setIsSigningOut(false);
+    }
+  }
 
   const visibleTasks = useMemo(() => {
     const normalizedQuery = query.trim().toLocaleLowerCase("vi");
@@ -154,44 +411,121 @@ export function TaskDashboard() {
     return [...result].sort((a, b) => {
       if (sortBy === "name") return a.title.localeCompare(b.title, "vi");
 
-      const getMinutes = (deadline: string) => {
-        const time = deadline?.match(/(\d{1,2}):(\d{2})/);
-        return time ? Number(time[1]) * 60 + Number(time[2]) : Number.MAX_SAFE_INTEGER;
-      };
-
-      return getMinutes(a.deadline ?? "") - getMinutes(b.deadline ?? "");
+      const aDueAt = a.due_at ? Date.parse(a.due_at) : Number.MAX_SAFE_INTEGER;
+      const bDueAt = b.due_at ? Date.parse(b.due_at) : Number.MAX_SAFE_INTEGER;
+      return aDueAt - bDueAt;
     });
   }, [query, sortBy, tasks]);
 
-  function addTask(newTask: Omit<Task, "id" | "is_done">) {
-    setTasks((current) => [
-      {
-        ...newTask,
-        id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
-        is_done: false,
-      },
-      ...current,
-    ]);
-    setFilter("pending");
+  async function addTask(newTask: Omit<Task, "id" | "is_done">) {
+    if (isAddingTaskRef.current) return false;
+    isAddingTaskRef.current = true;
+    setIsAddingTask(true);
+    setTaskError("");
+    try {
+      await apiFetch(
+        "/api/tasks",
+        { method: "POST", body: JSON.stringify({ title: newTask.title, due_at: newTask.due_at }) },
+        () => router.replace("/login"),
+      );
+      setFilter("pending");
+      setIsAddOpen(false);
+      await refreshTasks();
+      return true;
+    } catch (error) {
+      setTaskError(
+        error instanceof ApiRequestError
+          ? error.message
+          : "Không thể thêm công việc. Vui lòng thử lại.",
+      );
+      return false;
+    } finally {
+      isAddingTaskRef.current = false;
+      setIsAddingTask(false);
+    }
   }
 
-  function toggleTask(id: string) {
-    setTasks((current) =>
-      current.map((task) =>
-        task.id === id ? { ...task, is_done: !task.is_done } : task,
-      ),
+  async function updateTask(id: string, patch: { title: string } | { is_done: boolean }) {
+    if (pendingTaskIdsRef.current.has(id)) return false;
+    pendingTaskIdsRef.current.add(id);
+    setPendingTaskIds(new Set(pendingTaskIdsRef.current));
+    setTaskError("");
+    try {
+      await apiFetch(
+        `/api/tasks/${encodeURIComponent(id)}`,
+        { method: "PATCH", body: JSON.stringify(patch) },
+        () => router.replace("/login"),
+      );
+      await refreshTasks();
+      return true;
+    } catch (error) {
+      setTaskError(
+        error instanceof ApiRequestError
+          ? error.message
+          : "Không thể cập nhật công việc. Vui lòng thử lại.",
+      );
+      return false;
+    } finally {
+      pendingTaskIdsRef.current.delete(id);
+      setPendingTaskIds(new Set(pendingTaskIdsRef.current));
+    }
+  }
+
+  async function toggleTask(id: string) {
+    const task = tasks.find((item) => item.id === id);
+    if (task) await updateTask(id, { is_done: !task.is_done });
+  }
+
+  async function editTask(id: string, title: string) {
+    return updateTask(id, { title });
+  }
+
+  async function deleteTask(id: string) {
+    if (pendingTaskIdsRef.current.has(id)) return;
+    pendingTaskIdsRef.current.add(id);
+    setPendingTaskIds(new Set(pendingTaskIdsRef.current));
+    setTaskError("");
+    try {
+      await apiFetch(
+        `/api/tasks/${encodeURIComponent(id)}`,
+        { method: "DELETE" },
+        () => router.replace("/login"),
+      );
+      await refreshTasks();
+    } catch (error) {
+      setTaskError(
+        error instanceof ApiRequestError
+          ? error.message
+          : "Không thể xóa công việc. Vui lòng thử lại.",
+      );
+    } finally {
+      pendingTaskIdsRef.current.delete(id);
+      setPendingTaskIds(new Set(pendingTaskIdsRef.current));
+    }
+  }
+
+  if (authStatus === "loading") {
+    return (
+      <main
+        aria-busy="true"
+        className="flex min-h-screen items-center justify-center bg-[#f0fdf4] px-4 text-sm text-muted"
+      >
+        Đang kiểm tra phiên đăng nhập...
+      </main>
     );
   }
 
-  function deleteTask(id: string) {
-    setTasks((current) => current.filter((task) => task.id !== id));
-  }
-
-  function editTask(id: string, title: string) {
-    setTasks((current) =>
-      current.map((task) => (task.id === id ? { ...task, title } : task)),
+  if (authStatus === "error") {
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-[#f0fdf4] px-4">
+        <p className="text-center text-sm text-[#b42318]" role="alert">
+          {authError}
+        </p>
+      </main>
     );
   }
+
+  if (authStatus !== "authenticated") return null;
 
   return (
     <div className="min-h-screen bg-[#f0fdf4] pb-24 text-foreground">
@@ -230,19 +564,31 @@ export function TaskDashboard() {
               src="/images/aesthetic-blue-flower.jpg"
               width={36}
             />
-            <Link
-              aria-label="Đến trang đăng nhập"
+            <button
+              aria-label="Đăng xuất"
               className="flex h-10 w-10 items-center justify-center rounded-xl text-muted transition hover:bg-[#ffdad6]/60 hover:text-[#b42318]"
-              href="/login"
               title="Đăng xuất"
+              disabled={isSigningOut}
+              onClick={handleSignOut}
+              type="button"
             >
               <Icon name="logout" className="h-5 w-5" />
-            </Link>
+            </button>
           </div>
         </div>
       </header>
 
       <main className="mx-auto flex w-full max-w-[1200px] flex-col gap-5 px-4 pb-8 pt-20 sm:gap-6 sm:px-6 lg:px-8">
+        {authError && (
+          <p className="text-sm text-[#b42318]" role="alert">
+            {authError}
+          </p>
+        )}
+        {taskError && (
+          <p className="text-sm text-[#b42318]" role="alert">
+            {taskError}
+          </p>
+        )}
         <div className="hidden flex-wrap items-end justify-between gap-3 md:flex">
           <div>
             <p className="mb-1 text-sm text-muted md:hidden">Thứ Ba, 24 Tháng 10</p>
@@ -263,7 +609,7 @@ export function TaskDashboard() {
                 <Icon name="flag" className="h-5 w-5" />
                 Thêm mục tiêu hoặc bài tập mới
               </div>
-              <TaskForm onAddTask={addTask} />
+              <TaskForm isSubmitting={isAddingTask} onAddTask={addTask} />
             </div>
 
             <div className="lg:hidden">
@@ -287,6 +633,7 @@ export function TaskDashboard() {
               </label>
               <button
                 className="flex h-11 shrink-0 items-center justify-center gap-1.5 rounded-xl bg-primary px-3.5 text-sm font-semibold text-white shadow-sm transition hover:bg-primary-hover md:hidden sm:px-4"
+                disabled={isAddingTask}
                 onClick={() => setIsAddOpen(true)}
                 type="button"
               >
@@ -388,13 +735,24 @@ export function TaskDashboard() {
               </div>
             </section>
 
-            <TaskList
-              filter={filter}
-              onDelete={deleteTask}
-              onEdit={editTask}
-              onToggle={toggleTask}
-              tasks={visibleTasks}
-            />
+            {isLoadingTasks ? (
+              <p aria-live="polite" className="py-8 text-center text-sm text-muted" role="status">
+                Đang tải công việc...
+              </p>
+            ) : tasks.length === 0 && !taskError ? (
+              <p className="rounded-2xl border border-dashed border-border bg-white/70 px-4 py-8 text-center text-sm text-muted">
+                Chưa có công việc nào. Hãy thêm công việc đầu tiên của bạn.
+              </p>
+            ) : tasks.length > 0 ? (
+              <TaskList
+                filter={filter}
+                onDelete={deleteTask}
+                onEdit={editTask}
+                onToggle={toggleTask}
+                pendingTaskIds={pendingTaskIds}
+                tasks={visibleTasks}
+              />
+            ) : null}
           </section>
 
           <aside className="hidden flex-col gap-5 lg:col-span-4 lg:flex">
@@ -443,6 +801,7 @@ export function TaskDashboard() {
       <button
         aria-label="Thêm công việc mới"
         className="fixed bottom-20 right-4 z-20 flex h-14 w-14 items-center justify-center rounded-full bg-primary text-white shadow-lg transition hover:bg-primary-hover active:scale-95 md:hidden"
+        disabled={isAddingTask}
         onClick={() => setIsAddOpen(true)}
         type="button"
       >
@@ -464,13 +823,18 @@ export function TaskDashboard() {
               <button
                 aria-label="Đóng"
                 className="flex h-10 w-10 items-center justify-center rounded-full text-muted hover:bg-[#f0fdf4]"
+                disabled={isAddingTask}
                 onClick={() => setIsAddOpen(false)}
                 type="button"
               >
                 <span aria-hidden="true" className="text-2xl leading-none">×</span>
               </button>
             </div>
-            <TaskForm onAddTask={addTask} onCancel={() => setIsAddOpen(false)} />
+            <TaskForm
+              isSubmitting={isAddingTask}
+              onAddTask={addTask}
+              onCancel={() => setIsAddOpen(false)}
+            />
           </section>
         </div>
       )}

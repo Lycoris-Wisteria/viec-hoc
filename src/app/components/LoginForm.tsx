@@ -1,16 +1,67 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Icon } from "./Icon";
+import { getSupabaseBrowserClient } from "@/lib/supabase-browser";
 
 export function LoginForm() {
+  const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
-  const [message, setMessage] = useState("");
+  const [errorMessage, setErrorMessage] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setMessage("Đây là giao diện mẫu. Thông tin đăng nhập không được lưu hoặc gửi đi.");
+    setErrorMessage("");
+    setIsSubmitting(true);
+
+    const formData = new FormData(event.currentTarget);
+    const email = String(formData.get("email") ?? "");
+    const password = String(formData.get("password") ?? "");
+
+    try {
+      const { data, error } = await getSupabaseBrowserClient().auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) {
+        switch (error.code) {
+          case "invalid_credentials":
+            setErrorMessage("Email hoặc mật khẩu không chính xác.");
+            break;
+          case "email_not_confirmed":
+            setErrorMessage("Email của bạn chưa được xác nhận. Vui lòng kiểm tra hộp thư.");
+            break;
+          case "user_banned":
+            setErrorMessage("Tài khoản hiện đang bị tạm khóa. Vui lòng liên hệ quản trị viên.");
+            break;
+          case "over_request_rate_limit":
+          case "too_many_requests":
+            setErrorMessage("Bạn đã thử đăng nhập quá nhiều lần. Vui lòng thử lại sau.");
+            break;
+          default:
+            setErrorMessage("Không thể đăng nhập. Vui lòng kiểm tra thông tin và thử lại.");
+        }
+        return;
+      }
+
+      if (!data.session) {
+        setErrorMessage("Đăng nhập chưa hoàn tất vì chưa nhận được phiên đăng nhập. Vui lòng thử lại.");
+        return;
+      }
+
+      router.push("/tasks");
+    } catch (error) {
+      setErrorMessage(
+        error instanceof Error && error.message.startsWith("Thiếu cấu hình Supabase.")
+          ? error.message
+          : "Không thể kết nối đến dịch vụ đăng nhập. Vui lòng thử lại.",
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   return (
@@ -91,7 +142,7 @@ export function LoginForm() {
                 </p>
               </div>
 
-              <form className="flex flex-col gap-3" onSubmit={handleSubmit}>
+              <form className="flex flex-col gap-3" method="post" onSubmit={handleSubmit}>
                 <div className="flex flex-col gap-1">
                   <label className="flex items-center gap-2 text-sm font-semibold" htmlFor="email">
                     <Icon name="mail" className="h-[18px] w-[18px] text-primary" />
@@ -155,15 +206,16 @@ export function LoginForm() {
                 </label>
 
                 <button
-                  className="flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 font-display text-base font-semibold text-white shadow-md transition hover:bg-primary-hover active:scale-[0.99]"
+                  className="flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 font-display text-base font-semibold text-white shadow-md transition hover:bg-primary-hover active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-60"
+                  disabled={isSubmitting}
                   type="submit"
                 >
-                  Đăng nhập
-                  <Icon name="arrow" className="h-5 w-5" />
+                  {isSubmitting ? "Đang đăng nhập..." : "Đăng nhập"}
+                  {!isSubmitting && <Icon name="arrow" className="h-5 w-5" />}
                 </button>
-                {message && (
-                  <p aria-live="polite" className="text-center text-sm text-primary">
-                    {message}
+                {errorMessage && (
+                  <p aria-live="polite" className="text-center text-sm text-[#b42318]" role="alert">
+                    {errorMessage}
                   </p>
                 )}
               </form>
@@ -196,12 +248,6 @@ export function LoginForm() {
                 Chưa có tài khoản?
                 <span className="ml-1 font-semibold text-primary">Đăng ký ngay</span>
               </p>
-              <Link
-                className="mt-2 block rounded-lg py-1 text-center text-sm font-medium text-primary underline-offset-4 hover:underline"
-                href="/tasks"
-              >
-                Xem giao diện công việc
-              </Link>
             </div>
 
             <footer className="mt-3 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-xs text-muted">

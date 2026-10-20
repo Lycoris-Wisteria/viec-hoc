@@ -4,6 +4,7 @@ export type Task = {
   is_done: boolean;
   subject?: string;
   deadline?: string;
+  due_at?: string | null;
   urgent?: boolean;
 };
 

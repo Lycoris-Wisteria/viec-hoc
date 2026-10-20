@@ -6,8 +6,9 @@ type TaskListProps = {
   tasks: Task[];
   filter: TaskFilter;
   onToggle: (id: string) => void;
-  onDelete: (id: string) => void;
-  onEdit: (id: string, title: string) => void;
+  onDelete: (id: string) => Promise<void>;
+  onEdit: (id: string, title: string) => Promise<boolean>;
+  pendingTaskIds: ReadonlySet<string>;
 };
 
 export function TaskList({
@@ -16,6 +17,7 @@ export function TaskList({
   onToggle,
   onDelete,
   onEdit,
+  pendingTaskIds,
 }: TaskListProps) {
   const pendingTasks = tasks.filter((task) => !task.is_done);
   const completedTasks = tasks.filter((task) => task.is_done);
@@ -37,9 +39,7 @@ export function TaskList({
     <div className="flex flex-col gap-6 sm:gap-8">
       {groups.map((group) => (
         <section
-          className={`flex flex-col gap-2 ${
-            filter === "all" && group.done ? "hidden sm:flex" : ""
-          }`}
+          className="flex flex-col gap-2"
           key={group.title}
         >
           <div className="flex items-center justify-between gap-3 px-1">
@@ -60,6 +60,7 @@ export function TaskList({
                   onDelete={onDelete}
                   onEdit={onEdit}
                   onToggle={onToggle}
+                  isPending={pendingTaskIds.has(task.id)}
                   task={task}
                 />
               ))}

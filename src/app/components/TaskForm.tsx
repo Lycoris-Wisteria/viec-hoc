@@ -5,17 +5,140 @@ import { Icon } from "./Icon";
 import { validateTaskTitle, type Task } from "./task";
 
 type TaskFormProps = {
-  onAddTask: (task: Omit<Task, "id" | "is_done">) => void;
+  onAddTask: (task: Omit<Task, "id" | "is_done">) => Promise<boolean>;
   onCancel?: () => void;
+  isSubmitting?: boolean;
 };
 
-const subjects = [
-  "Toán cao cấp",
-  "Đồ án tốt nghiệp",
-  "Tiếng Anh IELTS",
-  "Kinh tế vĩ mô",
-  "Lập trình Web",
-];
+const weekdays = ["T2", "T3", "T4", "T5", "T6", "T7", "CN"];
+const monthFormatter = new Intl.DateTimeFormat("vi-VN", { month: "long" });
+const dateFormatter = new Intl.DateTimeFormat("vi-VN", {
+  day: "2-digit",
+  month: "2-digit",
+  year: "numeric",
+});
+
+function DatePickerDialog({
+  value,
+  onCancel,
+  onConfirm,
+}: {
+  value: Date;
+  onCancel: () => void;
+  onConfirm: (value: Date) => void;
+}) {
+  const [visibleMonth, setVisibleMonth] = useState(
+    () => new Date(value.getFullYear(), value.getMonth(), 1),
+  );
+  const dialogTitleId = "date-picker-title";
+  const year = visibleMonth.getFullYear();
+  const month = visibleMonth.getMonth();
+  const firstWeekday = (new Date(year, month, 1).getDay() + 6) % 7;
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const currentYear = new Date().getFullYear();
+  const years = Array.from({ length: 31 }, (_, index) => currentYear - 10 + index);
+  const selectedDate =
+    value.getFullYear() === year && value.getMonth() === month ? value.getDate() : null;
+
+  useEffect(() => {
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") onCancel();
+    }
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [onCancel]);
+
+  function changeMonth(offset: number) {
+    setVisibleMonth(new Date(year, month + offset, 1));
+  }
+
+  return (
+    <div className="absolute left-0 top-full z-50 mt-2 w-72 max-w-[calc(100vw-2rem)]">
+      <section
+        aria-labelledby={dialogTitleId}
+        className="rounded-xl border border-border bg-white p-3 shadow-xl"
+        role="dialog"
+      >
+        <h2 className="sr-only" id={dialogTitleId}>Chọn ngày tháng năm</h2>
+        <div className="flex items-center justify-between gap-1">
+          <button
+            aria-label="Tháng trước"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-muted transition hover:bg-[#e0faeb] hover:text-primary"
+            onClick={() => changeMonth(-1)}
+            type="button"
+          >
+            <span aria-hidden="true">‹</span>
+          </button>
+          <div className="flex min-w-0 flex-1 items-center justify-center gap-1.5">
+            <label className="sr-only" htmlFor="task-date-month">Tháng</label>
+            <select
+              className="min-w-0 rounded-lg border border-border bg-white px-2 py-2 text-sm font-semibold text-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+              id="task-date-month"
+              onChange={(event) => setVisibleMonth(new Date(year, Number(event.target.value), 1))}
+              value={month}
+            >
+              {Array.from({ length: 12 }, (_, index) => (
+                <option key={index} value={index}>
+                  {monthFormatter.format(new Date(year, index, 1))}
+                </option>
+              ))}
+            </select>
+            <label className="sr-only" htmlFor="task-date-year">Năm</label>
+            <select
+              className="rounded-lg border border-border bg-white px-2 py-2 text-sm font-semibold text-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+              id="task-date-year"
+              onChange={(event) => setVisibleMonth(new Date(Number(event.target.value), month, 1))}
+              value={year}
+            >
+              {years.map((item) => (
+                <option key={item} value={item}>{item}</option>
+              ))}
+            </select>
+          </div>
+          <button
+            aria-label="Tháng sau"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-muted transition hover:bg-[#e0faeb] hover:text-primary"
+            onClick={() => changeMonth(1)}
+            type="button"
+          >
+            <span aria-hidden="true">›</span>
+          </button>
+        </div>
+
+        <div className="mt-2 grid grid-cols-7 gap-1 text-center text-xs font-semibold text-muted">
+          {weekdays.map((day) => <span className="py-1" key={day}>{day}</span>)}
+        </div>
+        <div className="mt-1 grid grid-cols-7 gap-1">
+          {Array.from({ length: firstWeekday }, (_, index) => (
+            <span aria-hidden="true" className="h-8 w-8" key={`empty-${index}`} />
+          ))}
+          {Array.from({ length: daysInMonth }, (_, index) => {
+            const day = index + 1;
+            const isSelected = selectedDate === day;
+
+            return (
+              <button
+                aria-label={dateFormatter.format(new Date(year, month, day))}
+                aria-pressed={isSelected}
+                className={`flex h-8 w-8 items-center justify-center rounded-lg text-sm transition ${
+                  isSelected
+                    ? "bg-primary font-semibold text-white"
+                    : "text-foreground hover:bg-[#e0faeb] hover:text-primary"
+                }`}
+                key={day}
+                onClick={() => onConfirm(new Date(year, month, day))}
+                type="button"
+              >
+                {day}
+              </button>
+            );
+          })}
+        </div>
+      </section>
+    </div>
+  );
+}
 
 function TimePickerDialog({
   value,
@@ -116,33 +239,19 @@ function TimePickerDialog({
   );
 }
 
-export function TaskForm({ onAddTask, onCancel }: TaskFormProps) {
+export function TaskForm({ onAddTask, onCancel, isSubmitting = false }: TaskFormProps) {
   const isDialog = Boolean(onCancel);
   const [title, setTitle] = useState("");
-  const [subject, setSubject] = useState(subjects[0]);
-  const [isSubjectOpen, setIsSubjectOpen] = useState(false);
-  const [activeSubjectIndex, setActiveSubjectIndex] = useState(0);
+  const [selectedDate, setSelectedDate] = useState(() => new Date());
+  const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
   const [deadline, setDeadline] = useState("17:30");
   const [isTimePickerOpen, setIsTimePickerOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
 
-  function handleSubjectKeyDown(event: React.KeyboardEvent<HTMLButtonElement>) {
-    if (event.key === "ArrowDown" || event.key === "ArrowUp") {
-      event.preventDefault();
-      const direction = event.key === "ArrowDown" ? 1 : -1;
-      setIsSubjectOpen(true);
-      setActiveSubjectIndex((current) => (current + direction + subjects.length) % subjects.length);
-    } else if (event.key === "Enter" && isSubjectOpen) {
-      event.preventDefault();
-      setSubject(subjects[activeSubjectIndex]);
-      setIsSubjectOpen(false);
-    } else if (event.key === "Escape") {
-      setIsSubjectOpen(false);
-    }
-  }
-
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (isSaving || isSubmitting) return;
     const trimmedTitle = title.trim();
 
     const titleError = validateTaskTitle(title);
@@ -151,14 +260,23 @@ export function TaskForm({ onAddTask, onCancel }: TaskFormProps) {
       return;
     }
 
-    onAddTask({
-      title: trimmedTitle,
-      subject,
-      deadline: `Hôm nay, ${deadline}`,
-    });
-    setTitle("");
-    setError(null);
-    onCancel?.();
+    setIsSaving(true);
+    try {
+      const [hour, minute] = deadline.split(":").map(Number);
+      const dueAt = new Date(selectedDate);
+      dueAt.setHours(hour, minute, 0, 0);
+      const saved = await onAddTask({
+        title: trimmedTitle,
+        due_at: dueAt.toISOString(),
+      });
+      if (saved) {
+        setTitle("");
+        setError(null);
+        onCancel?.();
+      }
+    } finally {
+      setIsSaving(false);
+    }
   }
 
   return (
@@ -201,31 +319,23 @@ export function TaskForm({ onAddTask, onCancel }: TaskFormProps) {
             : "flex flex-col gap-3 md:grid md:grid-cols-3 md:items-center"
         }
       >
-        <label className="sr-only" htmlFor="new-task-subject">
-          Môn học
+        <label className="sr-only" htmlFor="new-task-date">
+          Ngày thực hiện
         </label>
         <div className="relative w-full min-w-0">
           <button
-            aria-activedescendant={isSubjectOpen ? `subject-option-${activeSubjectIndex}` : undefined}
-            aria-controls="new-task-subject-options"
-            aria-expanded={isSubjectOpen}
-            aria-haspopup="listbox"
-            aria-label="Môn học"
-            className="flex h-10 w-full items-center justify-between rounded-lg bg-[#e0faeb] py-2 pl-3 pr-3 text-left text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
-            id="new-task-subject"
-            onClick={() => {
-              const selectedIndex = subjects.indexOf(subject);
-              setActiveSubjectIndex(selectedIndex >= 0 ? selectedIndex : 0);
-              setIsSubjectOpen((current) => !current);
-            }}
-            onKeyDown={handleSubjectKeyDown}
-            role="combobox"
+            aria-expanded={isDatePickerOpen}
+            aria-haspopup="dialog"
+            aria-label={`Chọn ngày, hiện tại ${dateFormatter.format(selectedDate)}`}
+            className="flex h-10 w-full items-center justify-between gap-2 rounded-lg bg-[#e0faeb] px-3 text-left text-sm text-foreground transition-colors hover:bg-[#d5eedf] focus:outline-none focus:ring-2 focus:ring-primary/20"
+            id="new-task-date"
+            onClick={() => setIsDatePickerOpen((current) => !current)}
             type="button"
           >
-            {subject}
+            <span className="truncate">{dateFormatter.format(selectedDate)}</span>
             <svg
               aria-hidden="true"
-              className={`h-4 w-4 shrink-0 text-muted transition-transform ${isSubjectOpen ? "rotate-180" : ""}`}
+              className={`h-4 w-4 shrink-0 text-muted transition-transform ${isDatePickerOpen ? "rotate-180" : ""}`}
               fill="none"
               stroke="currentColor"
               strokeLinecap="round"
@@ -236,35 +346,15 @@ export function TaskForm({ onAddTask, onCancel }: TaskFormProps) {
               <path d="m7 10 5 5 5-5" />
             </svg>
           </button>
-          {isSubjectOpen && (
-            <ul
-              aria-labelledby="new-task-subject"
-              className="absolute left-0 right-0 top-full z-30 mt-2 max-h-56 overflow-y-auto rounded-xl border border-border bg-white p-1.5 shadow-lg"
-              id="new-task-subject-options"
-              role="listbox"
-            >
-              {subjects.map((item, index) => (
-                <li key={item} role="presentation">
-                  <button
-                    aria-selected={subject === item}
-                    className={`w-full rounded-lg px-3 py-2.5 text-left text-sm transition-colors hover:bg-primary hover:text-white ${
-                      activeSubjectIndex === index ? "bg-primary text-white" : "text-foreground"
-                    }`}
-                    id={`subject-option-${index}`}
-                    onClick={() => {
-                      setSubject(item);
-                      setActiveSubjectIndex(index);
-                      setIsSubjectOpen(false);
-                    }}
-                    onMouseEnter={() => setActiveSubjectIndex(index)}
-                    role="option"
-                    type="button"
-                  >
-                    {item}
-                  </button>
-                </li>
-              ))}
-            </ul>
+          {isDatePickerOpen && (
+            <DatePickerDialog
+              onCancel={() => setIsDatePickerOpen(false)}
+              onConfirm={(value) => {
+                setSelectedDate(value);
+                setIsDatePickerOpen(false);
+              }}
+              value={selectedDate}
+            />
           )}
         </div>
         <div className="relative w-full min-w-0">
@@ -290,13 +380,14 @@ export function TaskForm({ onAddTask, onCancel }: TaskFormProps) {
           )}
         </div>
         <button
-          className={`flex h-11 items-center justify-center gap-2 rounded-xl bg-primary px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-primary-hover active:scale-[0.98] ${
+          className={`flex h-11 items-center justify-center gap-2 rounded-xl bg-primary px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-primary-hover active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 ${
             isDialog ? "col-span-2 w-full" : "w-full"
           }`}
+          disabled={isSaving || isSubmitting}
           type="submit"
         >
           <Icon name="plus" className="h-5 w-5" />
-          Thêm công việc
+          {isSaving || isSubmitting ? "Đang thêm..." : "Thêm công việc"}
         </button>
       </div>
     </form>
