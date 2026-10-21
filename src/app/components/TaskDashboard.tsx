@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { z } from "zod";
+import type { User } from "@supabase/supabase-js";
 import { Icon } from "./Icon";
 import { TaskForm } from "./TaskForm";
 import { TaskList } from "./TaskList";
@@ -79,6 +80,15 @@ const taskListResponse = z.object({
     }),
   ),
 });
+
+function getAccountDisplayName(user: User | null | undefined) {
+  for (const key of ["full_name", "name"] as const) {
+    const name = user?.user_metadata[key];
+    if (typeof name === "string" && name.trim()) return name.trim();
+  }
+
+  return user?.email?.split("@")[0]?.trim() || "Bạn";
+}
 
 function ProgressCard({ tasks }: { tasks: Task[] }) {
   const completed = tasks.filter((task) => task.is_done).length;
@@ -266,10 +276,12 @@ export function TaskDashboard() {
   >("loading");
   const [authError, setAuthError] = useState("");
   const [isSigningOut, setIsSigningOut] = useState(false);
+  const [displayName, setDisplayName] = useState("Bạn");
 
   const clearDashboardState = useCallback(() => {
     refreshGenerationRef.current += 1;
     setTasks([]);
+    setDisplayName("Bạn");
     setFilter("all");
     setQuery("");
     setIsAddOpen(false);
@@ -295,6 +307,7 @@ export function TaskDashboard() {
           if (!isMounted) return;
 
           setAuthError("");
+          setDisplayName(getAccountDisplayName(session?.user));
           if (session) {
             setAuthStatus("authenticated");
           } else {
@@ -316,6 +329,7 @@ export function TaskDashboard() {
         }
 
         if (data.session) {
+          setDisplayName(getAccountDisplayName(data.session.user));
           setAuthStatus("authenticated");
         } else {
           clearDashboardState();
@@ -554,11 +568,11 @@ export function TaskDashboard() {
 
           <div className="flex items-center gap-2.5">
             <span className="hidden text-right sm:block">
-              <span className="block text-xs font-semibold">Mai Linh</span>
+              <span className="block text-xs font-semibold">{displayName}</span>
               <span className="block text-[11px] text-muted">Sinh viên</span>
             </span>
             <Image
-              alt="Ảnh đại diện Mai Linh"
+              alt={`Ảnh đại diện ${displayName}`}
               className="h-9 w-9 rounded-full object-cover ring-2 ring-white"
               height={36}
               src="/images/aesthetic-blue-flower.jpg"
@@ -593,7 +607,7 @@ export function TaskDashboard() {
           <div>
             <p className="mb-1 text-sm text-muted md:hidden">Thứ Ba, 24 Tháng 10</p>
             <h1 className="font-display text-[22px] font-semibold leading-tight tracking-tight sm:text-3xl">
-              Chào buổi sáng, Mai Linh!
+              Chào buổi sáng, {displayName}!
             </h1>
           </div>
           <div className="hidden items-center gap-2 rounded-xl bg-[#e0faeb] px-3 py-2 text-xs font-medium text-muted md:flex">

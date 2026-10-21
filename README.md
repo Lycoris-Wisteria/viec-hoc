@@ -32,6 +32,8 @@ Trong Supabase Dashboard, mở **Authentication** → **Users** → **Add user**
 2. Xác nhận email cho tài khoản, hoặc dùng tính năng xác nhận trong dashboard. Nếu project yêu cầu xác minh email, tài khoản phải được xác nhận trước khi đăng nhập.
 3. Dùng một tài khoản riêng cho Playwright nếu có thể. Bài test sẽ đăng nhập tài khoản này, tạo/sửa/xóa dữ liệu thử trên database thật và dọn những nhiệm vụ do test tạo.
 
+Để mỗi tài khoản hiển thị tên riêng trên trang nhiệm vụ, mở thông tin người dùng trong **Authentication** → **Users** và đặt **User Metadata** có trường `full_name`, ví dụ `{"full_name":"Nguyễn An"}`. Ứng dụng hiển thị tên này sau khi đăng nhập; nếu chưa đặt, ứng dụng dùng phần email trước ký tự `@`.
+
 Tài khoản test A được cấu hình bằng `TEST_EMAIL_A` và `TEST_PASSWORD_A` trong `.env.local`. Đây là biến chỉ dành cho môi trường phát triển/kiểm thử, **không** thêm tiền tố `NEXT_PUBLIC_`. Bộ test hiện tại chỉ dùng tài khoản A; không cần cấu hình tài khoản B.
 
 ## 4. Cấu hình biến môi trường
