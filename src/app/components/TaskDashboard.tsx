@@ -327,7 +327,6 @@ export function TaskDashboard() {
           setAuthStatus("error");
           return;
         }
-
         if (data.session) {
           setDisplayName(getAccountDisplayName(data.session.user));
           setAuthStatus("authenticated");
@@ -607,7 +606,7 @@ export function TaskDashboard() {
           <div>
             <p className="mb-1 text-sm text-muted md:hidden">Thứ Ba, 24 Tháng 10</p>
             <h1 className="font-display text-[22px] font-semibold leading-tight tracking-tight sm:text-3xl">
-              Chào buổi sáng, {displayName}!
+              Chào buổi sáng!
             </h1>
           </div>
           <div className="hidden items-center gap-2 rounded-xl bg-[#e0faeb] px-3 py-2 text-xs font-medium text-muted md:flex">
